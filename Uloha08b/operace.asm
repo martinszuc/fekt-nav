@@ -1,44 +1,48 @@
-; Autor: Miroslav Balik
-; Source code: DLL(OBJ) 32bit Win32 API
+; Autor: Martin Szuc (231284)
+; Datum: 09.04.2025
+; Source code: DLL 32bit Win32 API
 ; Directs for assembling and linking:
-; nasm operace.asm –fobj
+; nasm operace.asm -fobj
 ; alink operace.obj -oPE -dll -o operace.dll
 
+[section .code use32 class=CODE]
 
+GLOBAL _soucet
+GLOBAL _fpu_op
+GLOBAL _DllMain
 
-global soucet          ;globalní funkce
-export soucet          ;externí funkce
-global fpu_op          ;globalní funkce
-export fpu_op          ;externí funkce
+_DllMain:
+    ; Vstupny bod DLL kniznice
+    mov eax, 1      ; Vrati TRUE
+    ret 12          ; Vycisti zasobnik (3 parametre * 4 bajty kazdy)
 
-; datový segment 
-[section .data class=DATA use32 align=16] 
+_soucet:
+    ; Funkcia na scitanie troch cisel
+    push ebp        ; Zaloha bazy ramca
+    mov ebp, esp    ; Nastavenie novej bazy ramca
+    
+    ; Ziskanie parametrov
+    mov eax, [ebp+8]    ; Prvy parameter (x)
+    add eax, [ebp+12]   ; Pridanie druheho parametra (y)
+    add eax, [ebp+16]   ; Pridanie tretieho parametra (z)
+    
+    ; Obnovenie registrov a navrat
+    mov esp, ebp    ; Obnovenie zasobnika
+    pop ebp         ; Obnovenie bazy ramca
+    ret 12          ; Vycisti zasobnik (3 parametre * 4 bajty kazdy)
 
-; kódový segment 
-[section .code use32 class=CODE] 
-
-..start:
-        
-DllMain: 						; Vstupní bod DLL knihovny
-		mov eax,1
-ret 12
-
-soucet:
-		push ebp
-		mov ebp,esp
-
-		;operace souctu tri promennych
-		
-		mov esp, ebp
-		pop ebp
-ret 12 ;12 protože jsou tøi parametry funkce
-
-fpu_op:
-		push ebp
-		mov ebp,esp
-		
-		;fpu operace s jednom celociselnou a jednou FPU hodnotou
-		 		
-		mov esp, ebp
-		pop ebp
-ret 8 ;8 protože jsou dva parametry funkce
+_fpu_op:
+    ; Funkcia na nasobenie int a float pomocou FPU
+    push ebp        ; Zaloha bazy ramca
+    mov ebp, esp    ; Nastavenie novej bazy ramca
+    
+    ; Operacia s FPU
+    finit               ; Inicializacia FPU
+    fild dword [ebp+8]  ; Nacita int parameter (x) na FPU zasobnik
+    fld dword [ebp+12]  ; Nacita float parameter (y) na FPU zasobnik
+    fmul                ; Vykona nasobenie ST(0) * ST(1) a ulozi ho do ST(0)
+    
+    ; Obnovenie registrov a navrat
+    mov esp, ebp    ; Obnovenie zasobnika
+    pop ebp         ; Obnovenie bazy ramca
+    ret 8           ; Vycisti zasobnik (2 parametre * 4 bajty kazdy)

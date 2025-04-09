@@ -1,4 +1,5 @@
-; Autor: Miroslav Balik
+; Autor: Martin Szuc (231284)
+; Datum: 09.04.2025
 ; Source code: EXE(OBJ) 32bit Win32 API
 ; Directs for assembling and linking:
 ; nasm aritmetickeoperace.asm -fobj
@@ -20,18 +21,25 @@ param2 dd 2
 param3 dd 3
 IntCislo dd 19
 RealCislo dd 1.28e-1
+result1 dd 0
+result2 dd 0.0
 
 [section .code use32 class=CODE]
 ..start:
 
-;naplneni zasobniku vstupnimi parametry
-;volani funkce soucet
+; Volanie funkcie soucet
+push dword [param3]    ; Treti parameter (z)
+push dword [param2]    ; Druhy parameter (y)
+push dword [param1]    ; Prvy parameter (x)
+call [soucet]          ; Volanie funkcie soucet
+mov [result1], eax     ; Ulozenie vysledku
 
-;naplneni zasobniku vstupnimi parametry
-;volani funkce fpu_op
+; Volanie funkcie fpu_op
+push dword [RealCislo] ; Float parameter (y)
+push dword [IntCislo]  ; Int parameter (x)
+call [fpu_op]          ; Volanie funkcie fpu_op
+fstp dword [result2]   ; Ulozenie vysledku z FPU
 
 .end:
 	push dword NULL
 	call [ExitProcess]
-	
-	
