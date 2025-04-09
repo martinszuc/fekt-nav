@@ -1,113 +1,111 @@
-; Autor: Miroslav Balik
-; Source code: DLL(OBJ) 32bit Win32 API
-; Directs for assembling and linking:
-; nasm tictoc.asm –fobj 
-; alink tictoc.obj -oPE -dll -o tictoc.dll
+; tictoc.asm - Provides _M_tic, _M_toc, _M_rtoc for timing
+; 32-bit, __stdcall
+;
+; Build:
+;   nasm tictoc.asm -fobj -o tictoc.obj
+;   alink tictoc.obj -oPE -dll -subsys windows -o tictoc.dll
 
-%include 'WIN32N.inc'	;definice struktur a ruznych datovych typu
+%include "WIN32N.inc"
 
 extern QueryPerformanceFrequency
 import QueryPerformanceFrequency kernel32.dll
 
+GLOBAL _M_toc
+GLOBAL _M_rtoc
+GLOBAL _M_tic
+GLOBAL _DllMain
+EXPORT _M_toc
+EXPORT _M_rtoc
+EXPORT _M_tic
+EXPORT _DllMain
 
-global M_toc          ;globalní funkce 
-export M_toc          ;externí funkce 
-global M_rtoc         ;globalní funkce
-export M_rtoc         ;externí funkce
-global M_tic          ;globalní funkce 
-export M_tic          ;externí funkce 
-
-
-; datový segment 
 [section .data class=DATA use32 align=16]
+; no special data needed
 
+[section .code use32 class=CODE]
 
-; kódový segment 
-[section .code use32 class=CODE] 
+; -----------------------------------------------------------------------------
+_DllMain:
+    mov eax, 1
+    ret 12
 
-..start:             
+; -----------------------------------------------------------------------------
+; int _stdcall M_toc(long *a);
+; Return elapsed time in microseconds (32-bit) since saved timestamp
+_M_toc:
+    push ebp
+    mov ebp, esp
+    sub esp, 8
 
-DllMain:
-		mov eax,1
-ret 12
+    lea ebx, [ebp - 8]
+    push ebx
+    call [QueryPerformanceFrequency]
 
-M_toc:                 
-	push dword ebp  
-	mov dword ebp, esp
-	sub esp, 8
+    rdtsc            ; EDX:EAX => TSC
+    mov ecx, edx
+    mov ebx, [ebp+8]
+    sub eax, [ebx]
+    sbb ecx, [ebx+4]
 
-	lea ebx, [EBP - 8]
-	push ebx
-	call [QueryPerformanceFrequency]
+    mov ebx, 1000
+    mul ebx
+    push eax
+    push edx
 
-	rdtsc		; v eax:edx je hodnota 2. citace
+    mov eax, ecx
+    mul ebx
+    pop ecx
+    add ecx, eax
 
-	mov ecx, edx  ; v eax:ecx je hodnota 2. citace
-	mov ebx, [EBP + 8]
-	sub eax, [EBX]
-	sbb ecx, [EBX + 4]	;vysledek bude v ecx:eax
+    pop eax
+    mov edx, ecx
+    mov ecx, [ebp - 8] ; freq
+    div ecx
 
-	mov ebx, 1000		
-	mul ebx			; vynasobi eax hodnotou 1000, aby byl cas v ms
-	push eax
-	push edx
+    mov esp, ebp
+    pop ebp
+    ret 4
 
-	mov eax, ecx		
-	mul ebx			; jeste vynasobi ecx hodntou 1000
-	pop ecx
-	add ecx, eax
+; -----------------------------------------------------------------------------
+; double _stdcall M_rtoc(long *a);
+; Return elapsed time in seconds (double)
+_M_rtoc:
+    push ebp
+    mov ebp, esp
+    sub esp, 8
 
-	pop eax			;rozdil v cyklech mezi 1.a 2. citacem je ted v ecx:eax
+    finit
+    mov eax, [ebp+8]
+    fild qword [eax]
+    rdtsc
+    mov [ebp-4], edx
+    mov [ebp-8], eax
+    fild qword [ebp-8]
+    fsub st1
 
-	mov edx,ecx
-	mov ecx, [EBP - 8]	; v ecx je ted delitel, tj. hodnota frekvence CPU
-	
-	div ecx			; tj. eax = edx:eax (rozdil v taktech) / ecx (CPU frekv.)
+    lea eax, [ebp-8]
+    push eax
+    call [QueryPerformanceFrequency]
+    fild qword [ebp-8]
+    fdivr st1
 
-	;mov dword [EBP + 12], eax
-	mov dword esp, ebp 
-	pop dword ebp
-ret 4
+    mov esp, ebp
+    pop ebp
+    ret 4
 
+; -----------------------------------------------------------------------------
+; void _stdcall M_tic(long *a);
+; Save current TSC in *a
+_M_tic:
+    push ebp
+    mov ebp, esp
 
-M_rtoc:                 
-	push dword ebp  
-	mov dword ebp, esp
-	sub esp, 8
+    rdtsc
+    mov ebx, [ebp+8]
+    mov [ebx], eax
+    mov [ebx+4], edx
 
-	finit
-	mov eax, [EBP + 8]
-	fild qword [eax]
+    mov esp, ebp
+    pop ebp
+    ret 4
 
-
-	rdtsc
-	mov [EBP - 4], edx
-	mov [EBP - 8], eax
-	fild qword [EBP - 8]
-	fsub st1
-
-	lea eax, [EBP - 8]
-	push eax
-	call [QueryPerformanceFrequency]
-	fild qword [EBP - 8]
-	fdivr st1
-
-	mov dword esp, ebp 
-	pop dword ebp
-ret 4
-
-
-M_tic:
-	push dword ebp  
-	mov dword ebp, esp
-
-	rdtsc
-	mov ebx, [ebp+8]
-	mov [ebx], eax
-	mov [ebx+4], edx
-
-	mov dword esp, ebp 
-	pop dword ebp
-ret 4
-
- 
