@@ -1,53 +1,22 @@
-; Autor: Miroslav Balík
-; Source code: EXE(OBJ) 32bit Win32 API
-; Directs for assembling and linking:
-; nasm mmxpodpora.asm -fobj
-; alink mmxpodpora.obj -oPE -subsys gui
+; Autor: Martin Szuc VUTID:231284
+; Datum: 16.04.2025
+; Popis: Funkcia pre zistenie podpory MMX na procesore
 
+global _MMXsupport
 
-%include 'WIN32N.inc'	;definice struktur a ruznych datovych typu
+section .text
 
-extern MessageBox
-import MessageBox user32.dll MessageBoxA
-extern ExitProcess
-import ExitProcess kernel32.dll
-
-
-
-[section .data class=DATA use32 align=16]
-
-headline: DB "Test MMX podpory",0
-txtpodporujemmx: DB "MMX je podporováno.",0
-txtnepodporujemmx: DB "MMX není podporováno.",0
-
-
-
-[section .code use32 class=CODE]
-..start:
-
-	;
-	; volani instrukce pro zjisteni podpory MMX
-	;
-
-	;
-	; smycka if, pokud neni zjistena podpora tak se proveden skok na navesti .nepodporuje
-	;
-
-
-	;
-	; Zobrazi dialogove okno s hlasenim, ze je zjistena podpora MMX
-	;
-
-	;	
-	; provede skok na navesti .end
-	;
-   		
-.nepodporuje:  
- 	
-	;
-	; Zobrazi dialogove okno s hlasenim, ze neni zjistena podpora MMX
-	;
-
-.end:
-	push dword NULL
-	call [ExitProcess]
+_MMXsupport:
+    push dword ebp
+    mov dword ebp, esp
+    
+    ; Pouzitie instrukcie CPUID pre zistenie podpory MMX
+    mov eax, 1      ; Nastavenie EAX = 1 pre ziskanie informacii
+    cpuid           ; Volanie instrukcie CPUID
+    mov eax, edx    ; Presun EDX (obsahuje flags) do EAX
+    shr eax, 23     ; Posun bitu 23 (MMX flag) do najnizsej pozicie
+    and eax, 1      ; Maskovanie vsetkych bitov okrem najnizsieho
+    
+    mov dword esp, ebp
+    pop dword ebp
+    ret 0

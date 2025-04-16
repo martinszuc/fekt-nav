@@ -7,16 +7,17 @@
 
 [section .code use32 class=CODE]
 
-GLOBAL _soucet
-GLOBAL _fpu_op
-GLOBAL _DllMain
+; Export these symbols without name decoration
+GLOBAL soucet
+GLOBAL fpu_op
+GLOBAL DllMain
 
-_DllMain:
+DllMain:
     ; Vstupny bod DLL kniznice
     mov eax, 1      ; Vrati TRUE
     ret 12          ; Vycisti zasobnik (3 parametre * 4 bajty kazdy)
 
-_soucet:
+soucet:
     ; Funkcia na scitanie troch cisel
     push ebp        ; Zaloha bazy ramca
     mov ebp, esp    ; Nastavenie novej bazy ramca
@@ -31,7 +32,7 @@ _soucet:
     pop ebp         ; Obnovenie bazy ramca
     ret 12          ; Vycisti zasobnik (3 parametre * 4 bajty kazdy)
 
-_fpu_op:
+fpu_op:
     ; Funkcia na nasobenie int a float pomocou FPU
     push ebp        ; Zaloha bazy ramca
     mov ebp, esp    ; Nastavenie novej bazy ramca
